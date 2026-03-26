@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path as _Path
 from typing import Iterable, List, Optional, TYPE_CHECKING, Union, Callable
 
 
@@ -71,14 +72,19 @@ class LogRender:
         row.append(Renderables(renderables))
         if self.show_path and path:
             path_text = Text()
+            # Use Path.as_uri() so that spaces and special characters in the
+            # path are percent-encoded (e.g. "Script python IA" → "Script%20python%20IA").
+            # Plain f"file://{link_path}" breaks Style.parse() on paths with spaces,
+            # silently suppressing OSC 8 hyperlinks.
+            link_uri = _Path(link_path).as_uri() if link_path else None
             path_text.append(
-                path, style=f"link file://{link_path}" if link_path else ""
+                path, style=f"link {link_uri}" if link_uri else ""
             )
             if line_no:
                 path_text.append(":")
                 path_text.append(
                     f"{line_no}",
-                    style=f"link file://{link_path}#{line_no}" if link_path else "",
+                    style=f"link {link_uri}#{line_no}" if link_uri else "",
                 )
             row.append(path_text)
 
